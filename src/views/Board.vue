@@ -2,24 +2,28 @@
   <div class="board">
     <div class="flex flex-row items-start">
       <!-- categories -->
+      <!-- draggable attribute will make it possible to drag the div around along with its content -->
       <!-- @drop event make our column can accept an element being dropped -->
       <!-- @dragenter event -> a dragged item enters a valid drop target -->
       <!-- @dragover event -> dragged item is being dragged over a valid drop target, every few hundred milliseconds -->
+      <!-- @dragstart.self event -> react to the column being dragged (.self -> capture event only on this div) -->
       <div
         class="column"
         v-for="(column, $columnIndex) of board.columns"
         :key="$columnIndex"
-        @drop="moveTask($event, column.tasks)"
+        draggable
+        @drop="moveTaskOrColumn($event, column.tasks, $columnIndex)"
         @dragover.prevent
         @dragenter.prevent
+        @dragstart.self="pickupColumn($event, $columnIndex)"
       >
         <div class="flex items-center mb-2 font-bold">
           {{ column.name }}
         </div>
         <div class="list-reset">
           <!-- tasks -->
-          <!-- draggable attribute will make it possible to drag the div around along with its content -->
-          <!-- listen to @dragstart event -> react to the task being dragged with pickupTask() -->
+          <!-- add drop event listener on every task, so that we can catch other tasks being dropped on top of it -->
+          <!-- @drop.stop -> add stop modifier to stop bubbling propagation of event to DOM -->
           <div
             class="task"
             v-for="(task, $taskIndex) of column.tasks"
@@ -27,6 +31,9 @@
             @click="goToTask(task)"
             draggable
             @dragstart="pickupTask($event, $taskIndex, $columnIndex)"
+            @dragover.prevent
+            @dragenter.prevent
+            @drop.stop="moveTaskOrColumn($event, column.tasks, $columnIndex, $taskIndex)"
           >
             <span class="w-full flex-no-shrink font-bold">
               {{ task.name }}
@@ -95,17 +102,43 @@ export default {
       //dataTransfer interface works similar to localStorage in that it can only store properties that can be stringified
       e.dataTransfer.setData("task-index", taskIndex);
       e.dataTransfer.setData("from-column-index", fromColumnIndex);
+      e.dataTransfer.setData("type", "task");
     },
-    moveTask(e, toTasks) {
+    pickupColumn(e, columnIndex) {
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.dropEffect = "move";
+      e.dataTransfer.setData("from-column-index", columnIndex);
+      e.dataTransfer.setData("type", "column");
+    },
+    moveTaskOrColumn(e, toTasks, toColumnIndex, taskIndex) {
+      const type = e.dataTransfer.getData("type");
+      if (type === "task") {
+        this.moveTask(
+          e,
+          toTasks,
+          taskIndex !== undefined ? taskIndex : toTasks.length
+        );
+      } else {
+        this.moveColumn(e, toColumnIndex);
+      }
+    },
+    moveTask(e, toTasks, toTaskIndex) {
       //take the information transferred through the dataTransfer interface and locate our tasks list
       const fromColumnIndex = e.dataTransfer.getData("from-column-index");
       const fromTasks = this.board.columns[fromColumnIndex].tasks;
       const taskIndex = e.dataTransfer.getData("task-index");
-
       this.$store.commit("MOVE_TASK", {
         fromTasks,
+        taskIndex,
         toTasks,
-        taskIndex
+        toTaskIndex
+      });
+    },
+    moveColumn(e, toColumnIndex) {
+      const fromColumnIndex = e.dataTransfer.getData("from-column-index");
+      this.$store.commit("MOVE_COLUMN", {
+        fromColumnIndex,
+        toColumnIndex
       });
     }
   }

@@ -24,9 +24,21 @@ export default new Vuex.Store({
       //task[key] = value
       Vue.set(task, key, value);
     },
-    MOVE_TASK(state, { fromTasks, toTasks, taskIndex }) {
+    /* move tasks between categories */
+    MOVE_TASK(state, { fromTasks, taskIndex, toTasks, toTaskIndex }) {
+      //splice() changes the content of array by removing/replacing existing elements and/or adding new elements
+      //pick and remove task from fromColumn
       const taskToMove = fromTasks.splice(taskIndex, 1)[0]; //splice(startIndex, deleteCount) -> return array with deleted elements
-      toTasks.push(taskToMove);
+      //insert task to toColumn
+      toTasks.splice(toTaskIndex, 0, taskToMove); //splice(index, 0, insertItem) -> insert item in arr at index
+    },
+    /* reorder categories */
+    MOVE_COLUMN(state, { fromColumnIndex, toColumnIndex }) {
+      const columnList = state.board.columns;
+      //pick and remove column from columnList
+      const columnToMove = columnList.splice(fromColumnIndex, 1)[0];
+      //insert column at certain position again in columnList
+      columnList.splice(toColumnIndex, 0, columnToMove);
     }
   },
   getters: {
