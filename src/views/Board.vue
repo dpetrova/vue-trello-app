@@ -54,6 +54,15 @@
           />
         </div>
       </div>
+      <!-- enter a new column (category) -->
+      <div class="column flex">
+        <input
+          class="p-2 mr-2 flex-grow"
+          placeholder="New column name"
+          v-model="newColumnName"
+          @keyup.enter="createColumn"
+        />
+      </div>
     </div>
 
     <!-- placeholder for display modal task-->
@@ -79,6 +88,11 @@ export default {
       return this.$route.name === "task";
     }
   },
+  data() {
+    return {
+      newColumnName: ""
+    };
+  },
   methods: {
     goToTask(task) {
       this.$router.push({ name: "task", params: { id: task.id } });
@@ -90,6 +104,12 @@ export default {
       this.$store.commit("CREATE_TASK", { tasks, name: e.target.value });
       // clear the input
       e.target.value = "";
+    },
+    createColumn() {
+      this.$store.commit("CREATE_COLUMN", {
+        name: this.newColumnName
+      });
+      this.newColumnName = "";
     },
     pickupTask(e, taskIndex, fromColumnIndex) {
       e.dataTransfer.effectAllowed = "move";
